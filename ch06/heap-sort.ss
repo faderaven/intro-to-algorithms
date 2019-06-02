@@ -11,24 +11,29 @@
 ;; protocol clause receives a primitive constructor new as an argument, return a
 ;; final constructor c.
 
+(define RESERVED 63)
+
 (define-record-type heap
-  (nongenerative heap-1)
-  (fields (mutable size) len v)
+  (nongenerative heap-for-sort)
+  (fields (mutable capacity) (mutable tail) (mutable v))
   (protocol
     (lambda (new)
       (lambda (size)
-        (new size size
-          (if (< size 3)
+        (new
+          (+ size RESERVED)
+          tail
+          (if (< tail 1)
              (assertion-violation
-               'heap-constructor "heap need length at least 2")
-             (let ([V (make-vector (+ size 1))])
-               (vector-set! V 0 'hold-empty)
-               V)))))))
+               'heap-constructor "heap need length at least 1")
+             ;; index at 0, not be used, index start at 1
+             (let ([v (make-vector (+ tail RESERVED 1))])
+               (vector-set! v 0 'hold-empty)
+               v)))))))
 
 (define heap-ref
   (lambda (A i)
     (if (< i 1)
-       "heap-ref: heap index start with 1"
+       "heap-ref: heap tail start with 1"
        (vector-ref (heap-v A) i))))
 
 (define heap-set!
@@ -38,17 +43,35 @@
 (define heap-set-random!
   (lambda (A range)
     (do ([i 1 (+ i 1)])
-        ((> i (heap-size A)))
+        ((> i (heap-tail A)))
       (heap-set! A i (random range)))))
+
+(define heap-append!
+  (lambda (A key)
+    (let ([next-pos (+ (heap-tail A) 1)])
+      (if (<= next-pos capacity)
+        (begin
+          (heap-tail-set! next-pos)
+          (heap-set! A next-pos key))
+        (begin
+          (let ([v (make-vector (+ capacity RESERVED 1))])
+            (vector-copy (heap-v A) 0 (heap-tail A) v)
+            (heap-v-set! A v))))
+    (if (<= tail capacity)
+      (begin
+        (heap-tail-set! (+ heap-tail 1))
+        (heap-set! A (heap-tail A) key))
+      (begin
+        ()))))
 
 (define heap-exchange
   (lambda (A i j)
-    (if (and (<= i (heap-size A))
-             (<= j (heap-size A)))
+    (if (and (<= i (heap-tail A))
+             (<= j (heap-tail A)))
        (let ([tmp (heap-ref A i)])
          (heap-set! A i (heap-ref A j))
          (heap-set! A j tmp)
-       "heap-exchange: index beyond boundary"))))
+       "heap-exchange: tail beyond boundary"))))
 
 (define PARENT
   (lambda (i)
@@ -65,10 +88,10 @@
 (define heapify-max
   (lambda (A i)
     (let ([l (LEFT i)] [r (RIGHT i)] [largest i])
-      (if (and (<= l (heap-size A))
+      (if (and (<= l (heap-tail A))
                (> (heap-ref A l) (heap-ref A i)))
          (set! largest l))
-      (if (and (<= r (heap-size A))
+      (if (and (<= r (heap-tail A))
                (> (heap-ref A r) (heap-ref A largest)))
          (set! largest r))
       (if (> (heap-ref A largest) (heap-ref A i))
@@ -78,7 +101,7 @@
 
 (define heap-build-max
   (lambda (A)
-    (do ([i (floor (/ (heap-size A) 2)) (- i 1)])
+    (do ([i (floor (/ (heap-tail A) 2)) (- i 1)])
         ((< i 1))
       (heapify-max A i))))
 
@@ -86,7 +109,7 @@
   (lambda (A)
     (letrec ([max?
                (lambda (i)
-                 (if (<= i (heap-size A))
+                 (if (<= i (heap-tail A))
                     (if (>= (vector-ref (heap-v A) (PARENT i))
                             (vector-ref (heap-v A) i))
                        (max? (+ i 1))
@@ -94,14 +117,28 @@
                     #t))])
       (max? 2))))
 
+(define heap-maximum
+  (lambda (A)
+    (heap-ref A 1)))
+
+(define heap-extract-max
+  (lambda (A)
+    (let ([largest (heap-ref A 1)])
+      (heap-exchange A 1 tail)
+      (heap-tail-set! A (-tail 1))
+      (heapify-max A 1)
+      largest)))
+
 (define heap-sort
   (lambda (A)
     (heap-build-max A)
-    (do ([size (heap-size A) (- size 1)])
-        ((< size 2))
-      (heap-exchange A 1 size)
-      (heap-size-set! A (- size 1))
-      (heapify-max A 1))))
+    (do ([tail (heap-tail A) (- tail 1)])
+        ((< tail 2))
+      (heap-exchange A 1 tail)
+      (heap-tail-set! A (- tail 1))
+      (heapify-max A 1))
+    ;; restore heap-tail
+    (heap-tail-set! A (heap-capacity A))))
 
 (define A (make-heap 100))
 (heap-set-random! A 1000)
