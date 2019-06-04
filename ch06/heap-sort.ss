@@ -11,7 +11,7 @@
 ;; protocol clause receives a primitive constructor new as an argument, return a
 ;; final constructor c.
 
-(define RESERVED 63)
+(define RESERVED 3)
 
 (define-record-type heap
   (nongenerative heap-for-sort)
@@ -19,21 +19,22 @@
   (protocol
     (lambda (new)
       (lambda (size)
+        (set! size (+ size 1))
         (new
           (+ size RESERVED)
-          tail
-          (if (< tail 1)
+          (- size 1)
+          (if (< size 1)
              (assertion-violation
                'heap-constructor "heap need length at least 1")
-             ;; index at 0, not be used, index start at 1
-             (let ([v (make-vector (+ tail RESERVED 1))])
+             ;; index 0 not be used, index start at 1
+             (let ([v (make-vector (+ size RESERVED))])
                (vector-set! v 0 'hold-empty)
                v)))))))
 
 (define heap-ref
   (lambda (A i)
     (if (< i 1)
-       "heap-ref: heap tail start with 1"
+       (display "heap-ref: heap index start with 1")
        (vector-ref (heap-v A) i))))
 
 (define heap-set!
@@ -46,48 +47,59 @@
         ((> i (heap-tail A)))
       (heap-set! A i (random range)))))
 
-(define heap-append!
-  (lambda (A key)
-    (let ([next-pos (+ (heap-tail A) 1)])
-      (if (<= next-pos capacity)
-        (begin
-          (heap-tail-set! next-pos)
-          (heap-set! A next-pos key))
-        (begin
-          (let ([v (make-vector (+ capacity RESERVED 1))])
-            (vector-copy (heap-v A) 0 (heap-tail A) v)
-            (heap-v-set! A v))))
-    (if (<= tail capacity)
-      (begin
-        (heap-tail-set! (+ heap-tail 1))
-        (heap-set! A (heap-tail A) key))
-      (begin
-        ()))))
+;; source: v1
+;; source start index: i
+;; destination: v2
+;; destination start index: j
+;; copy amount: n
+(define vector-copy
+  (lambda (v1 i v2 j n)
+    (cond
+      [(> (+ i n) (vector-length v1))
+       (display "vector-copy: copy amount beyond source length\n")]
+      [(> (+ j n) (vector-length v2))
+       (display "vector-copy: copy amount beyond destinatin length\n")]
+      [else
+       (do ([i i (+ i 1)] [j j (+ j 1)] [c 0 (+ c 1)])
+           ((= c n))
+         (vector-set! v2 j (vector-ref v1 i)))])))
 
-(define heap-exchange
+(define heap-append!
+  (lambda (A value)
+    (let ([next-tail (+ (heap-tail A) 1)]
+          [capacity (heap-capacity A)])
+      (if (= next-tail capacity)
+        (let ([v (make-vector (+ capacity RESERVED))])
+          (vector-copy (heap-v A) 0 v 0 capacity)
+          (heap-capacity-set! A (vector-length v))
+          (heap-v-set! A v)))
+      (heap-tail-set! A next-tail)
+      (heap-set! A next-tail value))))
+
+(define heap-exchange!
   (lambda (A i j)
     (if (and (<= i (heap-tail A))
              (<= j (heap-tail A)))
        (let ([tmp (heap-ref A i)])
          (heap-set! A i (heap-ref A j))
-         (heap-set! A j tmp)
-       "heap-exchange: tail beyond boundary"))))
+         (heap-set! A j tmp))
+       (display "heap-exchange!: index beyond boundary\n"))))
 
-(define PARENT
+(define parent
   (lambda (i)
     (floor (/ i 2))))
 
-(define LEFT
+(define left
   (lambda (i)
     (* i 2)))
 
-(define RIGHT
+(define right
   (lambda (i)
     (+ 1 (* i 2))))
 
 (define heapify-max
   (lambda (A i)
-    (let ([l (LEFT i)] [r (RIGHT i)] [largest i])
+    (let ([l (left i)] [r (right i)] [largest i])
       (if (and (<= l (heap-tail A))
                (> (heap-ref A l) (heap-ref A i)))
          (set! largest l))
@@ -96,10 +108,10 @@
          (set! largest r))
       (if (> (heap-ref A largest) (heap-ref A i))
          (begin
-            (heap-exchange A i largest)
+            (heap-exchange! A i largest)
             (heapify-max A largest))))))
 
-(define heap-build-max
+(define heap-build-max!
   (lambda (A)
     (do ([i (floor (/ (heap-tail A) 2)) (- i 1)])
         ((< i 1))
@@ -107,42 +119,59 @@
 
 (define heap-max?
   (lambda (A)
-    (letrec ([max?
-               (lambda (i)
-                 (if (<= i (heap-tail A))
-                    (if (>= (vector-ref (heap-v A) (PARENT i))
-                            (vector-ref (heap-v A) i))
-                       (max? (+ i 1))
-                       #f)
-                    #t))])
-      (max? 2))))
+    (let f ([index 2])
+      (if (<= i (heap-tail A))
+        (if (>= (heap-ref A (parent index))
+                (heap-ref A index))
+          (f (+ index 1))
+          #f)
+        #t))))
 
 (define heap-maximum
   (lambda (A)
     (heap-ref A 1)))
 
-(define heap-extract-max
+(define heap-max-extract
   (lambda (A)
     (let ([largest (heap-ref A 1)])
-      (heap-exchange A 1 tail)
-      (heap-tail-set! A (-tail 1))
+      (heap-exchange! A 1 tail)
+      (heap-tail-set! A (- tail 1))
       (heapify-max A 1)
       largest)))
 
+(define heap-max-insert!
+  (lambda (A value)
+    (heap-append! A value)
+    (let ([tail (heap-tail A)])
+      (do ([i tail (parent i)]
+           [p (parent tail) (parent p)])
+          ((or (< p 1)
+               (> (heap-ref A p) (heap-ref A i))))
+        (heap-exchange! A p i)))))
+
 (define heap-sort
   (lambda (A)
-    (heap-build-max A)
-    (do ([tail (heap-tail A) (- tail 1)])
-        ((< tail 2))
-      (heap-exchange A 1 tail)
-      (heap-tail-set! A (- tail 1))
-      (heapify-max A 1))
-    ;; restore heap-tail
-    (heap-tail-set! A (heap-capacity A))))
+    (heap-build-max! A)
+    (let ([tail (heap-tail A)])
+      (do ([tail tail (- tail 1)])
+          ((< tail 2))
+        (heap-exchange! A 1 tail)
+        (heap-tail-set! A (- tail 1))
+        (heapify-max A 1))
+      ;; restore heap-tail
+      (heap-tail-set! A tail))))
 
-(define A (make-heap 100))
-(heap-set-random! A 1000)
-(display (heap-v A))
-(display "\n")
-(heap-sort A)
-(display (heap-v A))
+(define A (make-heap 3))
+(heap-set-random! A 15)
+(heap-build-max! A)
+(display A)
+(newline)
+(heap-max-insert! A 9)
+(display A)
+(newline)
+(heap-max-insert! A 3)
+(display A)
+(newline)
+(heap-max-insert! A 15)
+(display A)
+(newline)
