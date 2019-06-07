@@ -106,14 +106,14 @@
       (if (and (<= r (heap-tail A))
                (> (heap-ref A r) (heap-ref A largest)))
          (set! largest r))
-      (if (> (heap-ref A largest) (heap-ref A i))
+      (if (not (= largest i))
          (begin
             (heap-exchange! A i largest)
             (heapify-max A largest))))))
 
 (define heap-build-max!
   (lambda (A)
-    (do ([i (floor (/ (heap-tail A) 2)) (- i 1)])
+    (do ([i (parent (heap-tail A)) (- i 1)])
         ((< i 1))
       (heapify-max A i))))
 
@@ -174,4 +174,11 @@
 (newline)
 (heap-max-insert! A 15)
 (display A)
+(newline)
+(define B (make-heap 100))
+(heap-set-random! B 1000)
+(display B)
+(newline)
+(heap-sort B)
+(display B)
 (newline)
