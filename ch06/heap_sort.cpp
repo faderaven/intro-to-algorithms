@@ -88,22 +88,19 @@ void Heap::exchange(int i , int j) {
 }
 
 void Heap::heapifyMax(int i) {
-    if(i*2+1 > tail) {
-        return;
-    } else {
-        int largest = i;
-        int l = left(i);
-        int r = right(i);
-        if(ref(l) > ref(i)) {
-            largest = l;
-        }
-        if(ref(r) > ref(largest)) {
-            largest = r;
-        }
-        if(largest != i) {
-            exchange(i, largest);
-            heapifyMax(largest);
-        }
+    int largest = i;
+    int l = left(i);
+    int r = right(i);
+
+    if(l <= tail && ref(l) > ref(i)) {
+        largest = l;
+    }
+    if(r <= tail && ref(r) > ref(largest)) {
+        largest = r;
+    }
+    if(largest != i) {
+        exchange(i, largest);
+        heapifyMax(largest);
     }
 }
 
@@ -147,7 +144,7 @@ void Heap::insertPriorityQueue(int value) {
 void Heap::sort() {
     buildMax();
     int tail_bk = tail;
-    for(tail = tail - 1; tail >= 2; tail = tail - 1) {
+    for(tail = tail - 1; tail >= 1; tail = tail - 1) {
         exchange(1, tail + 1);
         heapifyMax(1);
     }
