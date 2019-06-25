@@ -2,9 +2,9 @@
 import random
 
 
-def setRandom(v, start, end):
+def setRandom(v, _b, end):
   for i in range(1, len(v)):
-    v[i] = random.randint(start, end)
+    v[i] = random.randint(_b, end)
 
 def printV(v):
   print('(Heap: #', end='')
@@ -14,6 +14,8 @@ def printV(v):
     print(v[i], end='')
     print(' ', end='')
   print('])')
+
+#-----------------------------------
 
 def left(i):
   return i*2
@@ -32,22 +34,22 @@ def exchange(v, i, j):
   v[i] = v[j]
   v[j] = temp
 
-def heapifyMax(v, i):
-  l = left(i)
-  r = right(i)
-  largest = i
+def heapifyMax(v, _b, _e):
+  l = left(_b)
+  r = right(_b)
+  largest = _b
 
-  if l < len(v) and v[l] > v[i]:
+  if l <= _e and v[l] > v[_b]:
     largest = l
-  if r < len(v) and v[r] > v[largest]:
+  if r <= _e and v[r] > v[largest]:
     largest = r
-  if largest != i:
-    exchange(v, largest, i)
-    heapifyMax(v, largest)
+  if largest != _b:
+    exchange(v, largest, _b)
+    heapifyMax(v, largest, _e)
 
 def buildMax(v):
   for i in range(parent(len(v) - 1), 0, -1):
-    heapifyMax(v, i)
+    heapifyMax(v, i, len(v) - 1)
 
 def isMax(v):
   for i in range(len(v) - 1, 1, -1):
@@ -58,13 +60,17 @@ def isMax(v):
 def heapSort(v):
   buildMax(v)
 
-
+  for _e in range(len(v) - 1, 0, -1):
+    exchange(v, 1, _e)
+    heapifyMax(v, 1, _e - 1)
 
 #-----------------------------------
 
-v = [None] * (10 + 1)
-setRandom(v, 0, 99)
+v = [None] * (100 + 1)
+setRandom(v, 0, 999)
 printV(v)
 buildMax(v)
+printV(v)
 print(isMax(v))
+heapSort(v)
 printV(v)
