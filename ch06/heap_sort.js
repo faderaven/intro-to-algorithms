@@ -20,7 +20,7 @@ function denary(n) {
             i = i + 1;
         } while (n > 0 && i < 4);
         return bound;
-    }    
+    }
 }
 
 // return a 0 < x < 1 float
@@ -43,7 +43,7 @@ function setRandom(v, min, max) {
         }
     } else if (bound > 0) {
         for (let i = 1; i < v.length; i = i+1) {
-            v[i] = min + randomFloat(bound);    
+            v[i] = min + randomFloat(bound);
         }
     } else {
         console.error("setRandom(v, min, max): the result of [max - min] is positive number");
@@ -94,7 +94,7 @@ function build(v, compareF) {
 }
 
 // if compareF is >, same as isMax
-// if compareF is <, same as isMin 
+// if compareF is <, same as isMin
 function isMost(v, compareF) {
     for (let i = v.length - 1; i >= 2; i = i-1) {
         if (compareF(v[i], v[parent(i)])) {
