@@ -38,7 +38,7 @@ const exchange = function(v, i, j) {
 }
 
 const randomInt = function(min, max) {
-    return Math.floor(Math.random() * (max - min) + min);
+    return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 const greater = function(n, m) { return n > m; }

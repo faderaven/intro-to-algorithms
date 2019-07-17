@@ -39,7 +39,7 @@ class Sort {
 
   private class Random_Part extends Partition {
     int partition(Compare cmp, ArrayList<BaseData> v, int l, int r) {
-      int q = new Random().nextInt(r - l + 1) + l;
+      int q = new Random().nextInt(r - l + 2) + l;
       exchange(v, q, r);
       return new Normal_Part().partition(cmp, v, l, r);
     }

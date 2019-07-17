@@ -17,7 +17,7 @@ def partition(compare, v, l, r):
   return i + 1
 
 def random_partition(compare, v, l, r):
-  q = random.randint(l, r - 1)
+  q = random.randint(l, r)
   exchange(v, q, r)
   return partition(compare, v, l, r)
 

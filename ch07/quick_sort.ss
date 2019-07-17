@@ -25,7 +25,7 @@
   (lambda (compare)
     (lambda (v l r)
       (exchange v
-                (+ l (random (add1 (- r l))))
+                (+ l (random (+ 2 (- r l))))
                 r)
       ((divide compare) v l r))))
 
