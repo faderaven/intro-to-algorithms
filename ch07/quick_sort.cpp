@@ -108,7 +108,7 @@ void print_vector(vector<int>& v) {
     for (int i = 0; i < (int)v.size(); i = i+1) {
         cout << v[i] << " ";
     }
-    cout << "]\n";
+    cout << "])\n";
 }
 
 int main() {
