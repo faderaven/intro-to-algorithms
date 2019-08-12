@@ -9,7 +9,7 @@
      (- n 1)))
 
  (define-record-type node
-   (nongenerative node)
+   (nongenerative node-for-link)
    (fields (mutable obj) (mutable next))
    (protocol
     (lambda (new)
