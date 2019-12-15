@@ -47,17 +47,20 @@
            (set! sum (+ sum ((cut-k-all i) n)))))])))
 
 (define cut-k-norepeat
-  (lambda (k)
+  (lambda (k j)
     (lambda (n)
       (let ([sum 0])
         (cond
-          [(= 1 k) (floor (/ n 2))]
+          [(= 1 k)
+           (do ([i j (+ i 1)])
+             ((> i (floor (/ n 2))) sum)
+             (set! sum (+ sum 1)))]
           [else
-           (do ([i 1 (+ i 1)])
+           (do ([i j (+ i 1)])
              ((> i (floor (/ n (+ k 1)))) sum)
-             (set! sum (+ sum ((cut-k-norepeat (- k 1)) (- n i)))))])))))
+             (set! sum (+ sum ((cut-k-norepeat (- k 1) i) (- n i)))))])))))
 
-(define rod-no-repeat
+(define rod-norepeat
   (lambda (n)
     (cond
       [(or (not (exact? n)) (<= n 1))
@@ -66,10 +69,9 @@
        (let ([sum 2]) ;; partition-n and no-cut
          (do ([i 1 (+ i 1)])
            ((= i (- n 1)) sum)
-           (set! sum (+ sum ((cut-k-norepeat i) n)))))])))
+           (set! sum (+ sum ((cut-k-norepeat i 1) n)))))])))
 
-((cut-k-all 2) 10)
-((cut-k-norepeat 2) 10)
+((cut-k-norepeat 2 1) 6)
 
 (define test
   (lambda (f up)
@@ -80,5 +82,5 @@
          (g (cons (f up) ls) (- up 1))]))))
 
 (test rod-all 15)
-(test rod-no-repeat 15)
+(test rod-norepeat 15)
 
