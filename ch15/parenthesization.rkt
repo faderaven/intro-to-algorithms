@@ -65,4 +65,16 @@
       [else
        (parentheses-help n)])))
 
-(parentheses 13)
+(define parenth
+  (lambda (n)
+    (cond
+      [(= 1 n) 1]
+      [else
+       (let ([sum 0])
+         (do ([i 1 (+ i 1)])
+           ((= i n) sum)
+           (set! sum (+ sum
+                        (* (parenth i) (parenth (- n i)))))))])))
+
+(map parentheses '(2 3 4 5 6 7 8 9 10))
+(map parenth '(2 3 4 5 6 7 8 9 10))

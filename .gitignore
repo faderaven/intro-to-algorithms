@@ -12,6 +12,9 @@ main.*
 [._]ss[a-gi-z]
 [._]sw[a-p]
 
+# DrRacket
+*.bak
+
 # Session
 Session.vim
 Sessionx.vim
