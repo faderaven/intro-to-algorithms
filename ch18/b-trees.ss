@@ -292,23 +292,33 @@
           (set! pre.keysum (n.keysum (list-ref (n.downs n@) (sub1 i)))))
         (when (< i (n.keysum n@))
           (set! nex.keysum (n.keysum (list-ref (n.downs n@) (add1 i)))))
-
+        
+        ; debug
+        ;(printf "compact-0 ~a ~a ~a\n" pre.keysum mid.keysum nex.keysum)
         (cond
           [(and (not (= 0 pre.keysum))
-                (<= pre.keysum nex.keysum)
+                (or (<= pre.keysum nex.keysum) (= 0 nex.keysum))
                 (<= (+ pre.keysum 1 mid.keysum) (B.lower B)))
+           ; debug
+           ;(printf "compact-1\n")
            (merge-pre n@ i)
            (compact B (cdr n@s) (cdr inx))]
           [(and (not (= 0 nex.keysum))
-                (< nex.keysum pre.keysum)
+                (or (< nex.keysum pre.keysum) (= 0 pre.keysum))
                 (<= (+ mid.keysum 1 nex.keysum) (B.lower B)))
+           ; debug
+           ;(printf "compact-2\n")
            (merge-nex n@ i)
            (compact B (cdr n@s) (cdr inx))]
           [(= 0 mid.keysum)
            (if (>= pre.keysum nex.keysum)
                (begin
+                 ; debug
+                 ;(printf "compact-3\n")
                  (pre-share n@ i))
                (begin
+                 ; debug
+                 ;(printf "compact-4\n")
                  (nex-share n@ i)))])))))
 
 
@@ -327,16 +337,24 @@
                                  (begin
                                    (set! n@s (cons n@ n@s))
                                    (set! inx (cons i  inx))
+                                   ; debug
+                                   ;(printf "delete-1 ~a \n" inx)
                                    (R (car ds))))]
                             [(= key (car ks))
                              (if (eq? UNDF (car ds))
                                  (begin
                                    (n.keys! n@ (list-remove (n.keys n@) i))
                                    (n.downs! n@ (cdr (n.downs n@)))
-                                   (n.keysum! n@ (sub1 (n.keysum n@))))
+                                   (n.keysum! n@ (sub1 (n.keysum n@)))
+                                   ; debug
+                                   ;(printf "delete-2 ~a\n" inx)
+                                   )
                                  (begin
+                                   ; debug
+                                   ;(printf "delete-3 ~a \n" inx)
                                    (set! n@s (cons n@ n@s))
                                    (set! inx (cons (add1 i) inx))
+                                   (printf "delete-3 ~a \n" inx)
                                    (n.keys! n@
                                             (list-replace (n.keys n@)
                                                           i (G (cadr ds))))))
@@ -344,7 +362,7 @@
                              (let ([root (B.root B)])
                                (when (and (= 0 (n.keysum root))
                                           (node? (car (n.downs root))))
-                                 (B.root! (car (n.downs root)))))]
+                                 (B.root! B (car (n.downs root)))))]
                             [else
                              (F (cdr ks) (cdr ds) (add1 i))]))])
                   (F (n.keys n@) (n.downs n@) 0)))]
